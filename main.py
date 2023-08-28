@@ -1,17 +1,3 @@
-# `FastAPI` is a Python class that provides all the functionality for the API
-from fastapi import FastAPI
-
-# `app` variable will be an instance of the FastAPI class.
-app = FastAPI()
-
-# Path Operation Decorator
-@app.get("/")
-# Path Operation Function 
-# In this case, it is an async function. Refer https://fastapi.tiangolo.com/async/ for more details
-async def root():
-    # Return the content. You can also return Pydantic models.
-    return {"message": "Hello World"}
-
 """
 run the server
 > uvicorn main:app --reload
@@ -28,3 +14,68 @@ OpenAPI
 > API schema and Data schema (JSON schema format)
 > The OpenAPI schema is what powers the two interactive documentation systems included.
 """
+
+from enum import Enum
+# `FastAPI` is a Python class that provides all the functionality for the API
+from fastapi import FastAPI
+
+
+# Import Enum and create a sub-class that inherits from str and from Enum
+class ModelName(str, Enum):
+    alexnet = "ALEXNET"
+    resnet = "RESNET"
+    lenet = "LENET"
+
+
+# `app` variable will be an instance of the FastAPI class.
+app = FastAPI()
+
+
+# Path Operation Decorator
+@app.get("/")
+# Path Operation Function 
+# In this case, it is an async function. Refer https://fastapi.tiangolo.com/async/ for more details
+async def root():
+    # Return the content. You can also return Pydantic models.
+    return {"message": "Hello World"}
+
+
+@app.get("/items/{item_id}")
+# With the type declaration, FastAPI gives you automatic request "parsing"
+# With the type declaration, FastAPI gives you data validation.
+# All the data validation is performed under the hood by Pydantic.
+async def read_item(item_id: int):
+    return {"item_id": item_id}
+
+
+# path operations are evaluated in order, you need to make sure that the path for `/users/me` is declared before the one for `/users/{user_id}`
+# Otherwise, the path for `/users/{user_id}` would match also for `/users/me`, "thinking" that it's receiving a parameter `user_id` with a value of "me"
+@app.get("/users/me")
+async def read_user_me():
+    return {"user_id": "I am you."}
+
+
+@app.get("/users/{user_id}")
+async def read_user(user_id: str):
+    return {"user_id": user_id}
+
+
+@app.get("/models/{model_name}")
+# Create a path parameter with a type annotation using the enum class, `ModelName`
+async def get_model(model_name: ModelName):
+    # You can compare it with the enumeration member in your created enum `ModelName`
+    if model_name is ModelName.alexnet:
+        return {"model_name": model_name, "message": "Deep Learning FTW!"}
+    # You can get the actual value using `model_name.value`
+    if model_name.value == ModelName.lenet.value:
+        return {"model_name": model_name, "message": "LeCNN all the images"}
+    # You can return enum members from your path operation, even nested in a JSON body.
+    # They will be converted to their corresponding values before returning them.
+    return {"model_name": model_name, "message": "Have some residuals"}
+
+
+# Path parameters containing paths
+# Using an option directly from Starlette, you can declare a path parameter containing a path using a URL like: /files/{file_path:path}
+@app.get("/files/{file_path:path}")
+async def read_file(file_path: str):
+    return {"file_path": file_path}
