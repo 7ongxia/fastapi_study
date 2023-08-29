@@ -16,8 +16,18 @@ OpenAPI
 """
 
 from enum import Enum
+from pydantic import BaseModel
 # `FastAPI` is a Python class that provides all the functionality for the API
 from fastapi import FastAPI
+
+
+# To declare a request body, use Pydantic models with all their power and benefits
+# Usually GET operation is not suitable for receiving the request body
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
 
 
 # Import Enum and create a sub-class that inherits from str and from Enum
@@ -109,3 +119,26 @@ async def read_user_item(
             {"description": "This is an amazing item that has a long description"}
         )
     return item
+
+
+"""
+With just that Python type declaration, FastAPI will
+1. Read the body of the request as JSON
+2. Convert the corresponding types (if needed)
+3. Validate the data
+3.1. if the data is invalid, it will return a nice and clear error
+4. Give you the received data in the parameter
+5. Generate JSON schema definitions for your model
+
+[ Request body + path + query parameters ]
+The function parameters will be recognized as follows
+1. if the parameter is also declared in the path, it will be used as a path parameter.
+2. if the parameter is of a singular type (int, float, str, bool, etc), it will be interpreted as a query parameter.
+3. if the parameter is declared to be of the type of a Pydantic model, it will be interpreted as a request body.
+
+"""
+@app.put("/items/{item_id}")
+# Declare class `Item` as a query parameter's data type, and it will work as a request
+async def create_item(item_id: int, item: Item):
+    # You can declare path parameters and request body at the same time. FastAPI will recognize that are declared to be Pydantic models should be taken from the request body.
+    return {"item_id": item_id, **item.model_dump()}
