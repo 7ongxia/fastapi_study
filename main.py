@@ -44,8 +44,16 @@ async def root():
 # With the type declaration, FastAPI gives you automatic request "parsing"
 # With the type declaration, FastAPI gives you data validation.
 # All the data validation is performed under the hood by Pydantic.
-async def read_item(item_id: int):
-    return {"item_id": item_id}
+# Optional Query Parameter (which is not part of the path parameters)
+async def read_item(item_id: str, q: str | None = None, short: bool = False):
+    item = {"item_id": item_id}
+    if q:
+        item.update({"q": q})
+    if not short:
+        item.update(
+            {"description": "This is an amazing item that has a long description"}
+        )
+    return item
 
 
 # path operations are evaluated in order, you need to make sure that the path for `/users/me` is declared before the one for `/users/{user_id}`
@@ -79,3 +87,25 @@ async def get_model(model_name: ModelName):
 @app.get("/files/{file_path:path}")
 async def read_file(file_path: str):
     return {"file_path": file_path}
+
+
+# Multiple path and query parameters
+# no need to declare them in any specific order (detected by name)
+"""
+3 types of query parameters
+- needy, a required parameter
+- parameter with default value
+- optional parameter
+"""
+@app.get("/users/{user_id}/items/{item_id}")
+async def read_user_item(
+    user_id: int, item_id: str, q: str | None = None, short: bool = False
+):
+    item = {"item_id": item_id, "owner_id": user_id}
+    if q:
+        item.update({"q": q})
+    if not short:
+        item.update(
+            {"description": "This is an amazing item that has a long description"}
+        )
+    return item
